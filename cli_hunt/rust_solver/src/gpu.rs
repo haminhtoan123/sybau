@@ -358,7 +358,7 @@ impl CudaAshmaizeOptimized {
         start_nonce: u64,
         batch_size: usize,
         rom: &Rom,
-        nb_loops: u32,
+        _nb_loops: u32,
         nb_instrs: u32,
     ) -> GpuResult<Vec<[u8; 64]>> {
         let actual_batch_size = batch_size.min(self.max_batch_size);
@@ -410,7 +410,7 @@ impl CudaAshmaizeOptimized {
         };
 
         unsafe {
-            self.kernel_func.launch(
+            self.kernel_func.clone().launch(
                 cfg,
                 (
                     &self.rom_buffer,
