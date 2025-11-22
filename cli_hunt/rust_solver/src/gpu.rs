@@ -312,13 +312,13 @@ impl CudaAshmaizeOptimized {
         let rom_buffer = device.htod_sync_copy(&rom.data)?;
         let rom_digest_buffer = device.htod_sync_copy(rom.digest.as_bytes())?;
         let salts_buffer = device.alloc_zeros::<u8>(max_batch_size * max_salt_len)?;
-        let initial_prog_seeds_buffer = device.alloc_zeros::<u8>(max_batch_size * 32)?;
+        let initial_prog_seeds_buffer = device.alloc_zeros::<u8>(max_batch_size * 64)?;
         let programs_buffer = device.alloc_zeros::<u8>(max_batch_size * program_size)?;
         let results_buffer = device.alloc_zeros::<u8>(max_batch_size * 64)?;
 
         // Pre-allocate CPU buffers
         let salt_bytes = vec![0u8; max_batch_size * max_salt_len];
-        let initial_prog_seeds = vec![0u8; max_batch_size * 32];
+        let initial_prog_seeds = vec![0u8; max_batch_size * 64];
         let results_host = vec![0u8; max_batch_size * 64];
 
         Ok(Self {
@@ -383,14 +383,14 @@ impl CudaAshmaizeOptimized {
             let salt = &self.salt_bytes[salt_start..salt_start + self.max_salt_len];
             let vm = VM::new(&rom.digest, nb_instrs, salt);
 
-            let prog_seed_start = i * 32;
-            self.initial_prog_seeds[prog_seed_start..prog_seed_start + 32]
+            let prog_seed_start = i * 64;
+            self.initial_prog_seeds[prog_seed_start..prog_seed_start + 64]
                 .copy_from_slice(&vm.prog_seed);
         }
 
         // Update GPU buffers (only copy what we need)
         let salt_data_size = actual_batch_size * self.max_salt_len;
-        let prog_seed_data_size = actual_batch_size * 32;
+        let prog_seed_data_size = actual_batch_size * 64;
 
         self.device
             .htod_sync_copy_into(&self.salt_bytes[..salt_data_size], &mut self.salts_buffer)?;
