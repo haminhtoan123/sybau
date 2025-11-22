@@ -493,6 +493,16 @@ fn solve_multi_gpu_optimized(
     use std::sync::mpsc;
     use std::thread;
 
+    // Initialize CUDA first to ensure proper device detection
+    let _init_cuda = match gpu::CudaAshmaize::new() {
+        Ok(_) => {}
+        Err(e) => {
+            eprintln!("Failed to initialize CUDA: {:?}, falling back to CPU", e);
+            solve_cpu_only(rom, suffix, difficulty_mask);
+            return None;
+        }
+    };
+
     let gpu_count = match gpu::CudaAshmaize::get_device_count() {
         Ok(count) if count > 0 => {
             eprintln!("Detected {} GPU(s)", count);
