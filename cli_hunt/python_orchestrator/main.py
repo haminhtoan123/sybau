@@ -337,9 +337,15 @@ def _solve_one_challenge(
 
         # Add optimization flags for GPU/mixed/auto modes
         if solver_mode in ["gpu", "mixed", "auto"]:
-            command.extend(["--optimized", str(optimized).lower()])
             if optimized:
+                command.append("--optimized=true")
                 command.extend(["--gpu-batch-size", str(gpu_batch_size)])
+            else:
+                command.append("--optimized=false")
+        # Debug: Print the exact command being executed
+        print(f"🔍 DEBUG - Command being executed:")
+        print(f"    {' '.join(command)}")
+
         start_time = datetime.now(timezone.utc)
         process = subprocess.Popen(
             command,
