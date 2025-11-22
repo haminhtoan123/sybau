@@ -5,7 +5,7 @@
 The optimized CUDA solver had compilation errors that have been **FIXED**:
 
 ### Fixed Issues:
-1. **Unused variable warning**: Changed `nb_loops` to `_nb_loops`
+1. **Variable name inconsistency**: Fixed `nb_loops` parameter usage in kernel launch
 2. **Kernel function move error**: Added `.clone()` to `self.kernel_func.launch()`
 
 These fixes are already applied to the code, but you still need to rebuild.
@@ -60,8 +60,8 @@ ls -la target/release/ashmaize-solver
 
 ## 🚨 Common Build Issues and Solutions
 
-### Issue: "unused variable: `nb_loops`" Warning
-**Status**: ✅ FIXED - Changed to `_nb_loops`
+### Issue: "cannot find value `nb_loops` in this scope" Error
+**Status**: ✅ FIXED - Corrected parameter name usage in kernel launch
 **No action needed** - this fix is already in the code
 
 ### Issue: "cannot move out of `self.kernel_func`" Error

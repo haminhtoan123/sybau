@@ -292,7 +292,7 @@ impl CudaAshmaizeOptimized {
         rom: &Rom,
         suffix: &str,
         max_batch_size: usize,
-        nb_loops: u32,
+        _nb_loops: u32,
         nb_instrs: u32,
     ) -> GpuResult<Self> {
         let device = CudaDevice::new(device_id)?;
@@ -358,7 +358,7 @@ impl CudaAshmaizeOptimized {
         start_nonce: u64,
         batch_size: usize,
         rom: &Rom,
-        _nb_loops: u32,
+        nb_loops: u32,
         nb_instrs: u32,
     ) -> GpuResult<Vec<[u8; 64]>> {
         let actual_batch_size = batch_size.min(self.max_batch_size);
