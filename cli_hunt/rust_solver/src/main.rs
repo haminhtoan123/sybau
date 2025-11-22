@@ -61,14 +61,6 @@ struct Args {
     #[cfg(feature = "cuda")]
     #[arg(long, default_value_t = OPTIMAL_BATCH_PER_GPU)]
     gpu_batch_size: usize,
-
-    #[cfg(feature = "cuda")]
-    #[arg(
-        long,
-        default_value = "true",
-        help = "Use optimized GPU solver with pre-allocated buffers"
-    )]
-    optimized: bool,
 }
 
 #[derive(clap::Subcommand, Debug)]
@@ -218,7 +210,6 @@ fn main() {
                     &no_pre_mine_hour,
                     mode,
                     gpu_batch_size,
-                    args.optimized,
                 );
             }
 
@@ -252,7 +243,6 @@ fn solve(
     no_pre_mine_hour: &str,
     solver_mode: SolverMode,
     batch_size: usize,
-    optimized: bool,
 ) {
     let rom = init_rom(no_pre_mine);
     let difficulty_mask = u32::from_str_radix(difficulty, 16).unwrap();
@@ -267,16 +257,10 @@ fn solve(
             solve_cpu_only(&rom, &suffix, difficulty_mask);
         }
         SolverMode::Gpu => {
-            if optimized {
-                if let Some(nonce) =
-                    solve_multi_gpu_optimized(&rom, &suffix, difficulty_mask, batch_size)
-                {
-                    println!("{:016x}", nonce);
-                }
-            } else {
-                if let Some(nonce) = solve_multi_gpu(&rom, &suffix, difficulty_mask, batch_size) {
-                    println!("{:016x}", nonce);
-                }
+            if let Some(nonce) =
+                solve_multi_gpu_optimized(&rom, &suffix, difficulty_mask, batch_size)
+            {
+                println!("{:016x}", nonce);
             }
         }
         SolverMode::Auto => {
@@ -289,17 +273,10 @@ fn solve(
             };
 
             if has_gpu {
-                if optimized {
-                    if let Some(nonce) =
-                        solve_multi_gpu_optimized(&rom, &suffix, difficulty_mask, batch_size)
-                    {
-                        println!("{:016x}", nonce);
-                    }
-                } else {
-                    if let Some(nonce) = solve_multi_gpu(&rom, &suffix, difficulty_mask, batch_size)
-                    {
-                        println!("{:016x}", nonce);
-                    }
+                if let Some(nonce) =
+                    solve_multi_gpu_optimized(&rom, &suffix, difficulty_mask, batch_size)
+                {
+                    println!("{:016x}", nonce);
                 }
             } else {
                 eprintln!("No GPU available, falling back to CPU");
@@ -307,16 +284,8 @@ fn solve(
             }
         }
         SolverMode::Mixed => {
-            if optimized {
-                if let Some(nonce) =
-                    solve_mixed_optimized(&rom, &suffix, difficulty_mask, batch_size)
-                {
-                    println!("{:016x}", nonce);
-                }
-            } else {
-                if let Some(nonce) = solve_mixed(&rom, &suffix, difficulty_mask, batch_size) {
-                    println!("{:016x}", nonce);
-                }
+            if let Some(nonce) = solve_mixed_optimized(&rom, &suffix, difficulty_mask, batch_size) {
+                println!("{:016x}", nonce);
             }
         }
     }

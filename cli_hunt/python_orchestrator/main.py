@@ -307,7 +307,6 @@ def _solve_one_challenge(
     address,
     challenge,
     solver_mode,
-    optimized=True,
     gpu_batch_size=1024,
 ):
     """Solves a single challenge."""
@@ -335,16 +334,9 @@ def _solve_one_challenge(
             solver_mode,
         ]
 
-        # Add optimization flags for GPU/mixed/auto modes
+        # Add GPU batch size for GPU modes (optimized mode is always used)
         if solver_mode in ["gpu", "mixed", "auto"]:
-            if optimized:
-                command.append("--optimized=true")
-                command.extend(["--gpu-batch-size", str(gpu_batch_size)])
-            else:
-                command.append("--optimized=false")
-        # Debug: Print the exact command being executed
-        print(f"🔍 DEBUG - Command being executed:")
-        print(f"    {' '.join(command)}")
+            command.extend(["--gpu-batch-size", str(gpu_batch_size)])
 
         start_time = datetime.now(timezone.utc)
         process = subprocess.Popen(
@@ -507,7 +499,6 @@ def solver_worker(
     max_solvers,
     challenge_selection,
     solver_mode,
-    optimized=True,
     gpu_batch_size=1024,
 ):
     tui_app.post_message(
@@ -590,7 +581,6 @@ def solver_worker(
                                 address,
                                 deepcopy(c),  # Pass a deepcopy
                                 solver_mode,
-                                optimized,
                                 gpu_batch_size,
                             )
                             active_futures.add(future)
@@ -746,7 +736,6 @@ def run_orchestrator(args):
         "max_solvers": args.max_solvers,
         "challenge_selection": args.challenge_selection,
         "solver_mode": args.solver_mode,
-        "optimized": args.optimized,
         "gpu_batch_size": args.gpu_batch_size,
     }
 
@@ -810,22 +799,10 @@ def main():
         help="Solver mode: 'cpu' (CPU only), 'gpu' (GPU only), 'auto' (GPU if available, else CPU), 'mixed' (CPU + GPU together). Default: auto",
     )
     run_parser.add_argument(
-        "--optimized",
-        action="store_true",
-        default=True,
-        help="Use optimized GPU solver with pre-allocated buffers (default: True)",
-    )
-    run_parser.add_argument(
-        "--no-optimized",
-        dest="optimized",
-        action="store_false",
-        help="Disable optimized solver and use original implementation",
-    )
-    run_parser.add_argument(
         "--gpu-batch-size",
         type=int,
         default=1024,
-        help="GPU batch size for optimized solver (default: 1024). Increase for high-end GPUs, decrease if out of memory",
+        help="GPU batch size (default: 1024). Increase for high-end GPUs, decrease if out of memory",
     )
 
     args = parser.parse_args()
