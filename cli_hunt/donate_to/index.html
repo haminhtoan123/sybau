@@ -346,7 +346,7 @@
                     );
 
                     const signature = signedData.signature;
-                    const curlCommand = `curl -L -X POST "https://scavenger.prod.gd.midnighttge.io/donate_to/${recipientAddr}/${selectedDonorAddress}/${signature}" -d {}`;
+                    const curlCommand = `curl -L -X POST "https://mine.defensio.io/api/donate_to/${recipientAddr}/${selectedDonorAddress}/${signature}" -d {}`;
 
                     displayCurlCommand(curlCommand);
                 } catch (error) {

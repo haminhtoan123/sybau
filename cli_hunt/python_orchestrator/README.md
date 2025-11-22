@@ -29,10 +29,20 @@ cargo build --release --features cuda
 
 ### Initial Setup
 
-1. Initialize the database with wallet JSON files:
+1. Initialize the database with address JSON files:
 
 ```bash
-uv run main.py init wallet1.json wallet2.json ...
+uv run main.py init addresses.json
+```
+
+Example `addresses.json` format:
+```json
+{
+    "addresses": [
+        "addr1qx2kd28nq8ac7qs93f6x2xfar6xmhz8eqm8v4s4vy2u9sek8sfxy9g2hjcwdr8cxzr7yvu6c8qy0z2yz4m3r6x8v7qzq8h8c",
+        "addr1q9f6r2x8v4s4vy2u9sek8sfxy9g2hjcwdr8cxzr7yvu6c8qy0z2yz4m3r6x8v7qzq8h8ckd28nq8ac7qs93f6x2xfar6xmhz"
+    ]
+}
 ```
 
 2. Start the orchestrator:
@@ -49,7 +59,7 @@ uv run main.py run
 uv run main.py init <json_files...>
 ```
 
-Imports wallet registration data and challenge queues from JSON files. Creates or updates `challenges.json`.
+Imports wallet addresses from JSON files with simplified format. Creates or updates `challenges.json`.
 
 ### Run Orchestrator
 

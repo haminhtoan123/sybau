@@ -5,7 +5,14 @@ use cryptoxide::{
 
 pub const DATASET_ACCESS_SIZE: usize = 64;
 
+#[derive(Clone)]
 pub struct RomDigest(pub(crate) [u8; 64]);
+
+impl RomDigest {
+    pub fn as_bytes(&self) -> &[u8] {
+        &self.0
+    }
+}
 
 /// The **R**ead **O**only **M**emory used to generate the proram.
 ///
@@ -14,6 +21,7 @@ pub struct RomDigest(pub(crate) [u8; 64]);
 /// The random generation type can be either [`RomGenerationType::FullRandom`] or [`RomGenerationType::TwoStep`].
 ///
 /// [`hash`]: crate::hash
+#[derive(Clone)]
 pub struct Rom {
     pub digest: RomDigest,
     pub data: Vec<u8>,

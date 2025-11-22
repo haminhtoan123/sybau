@@ -1,20 +1,21 @@
 import argparse
+import concurrent.futures
 import json
 import logging
 import os
-import concurrent.futures
 import subprocess
 import threading
 from copy import deepcopy
-from datetime import datetime, timezone, timedelta
+from datetime import datetime, timedelta, timezone
 
 from curl_cffi import requests
+
 from tui import (
     ChallengeUpdate,
-    SolutionFound,
     LogMessage,
     OrchestratorTUI,
     RefreshTable,
+    SolutionFound,
     StatsUpdate,
 )
 
@@ -60,7 +61,7 @@ def setup_logging():
 def fetch_wallet_statistics(address):
     """Fetch mining statistics for a wallet from the API."""
     try:
-        url = f"https://scavenger.prod.gd.midnighttge.io/statistics/{address}"
+        url = f"https://mine.defensio.io/api/statistics/{address}"
         response = session.get(url, timeout=10)
         response.raise_for_status()
         data = response.json()
@@ -257,9 +258,7 @@ def fetcher_worker(db_manager, stop_event, tui_app):
             )
         else:
             try:
-                response = session.get(
-                    "https://scavenger.prod.gd.midnighttge.io/challenge"
-                )
+                response = session.get("https://mine.defensio.io/api/challenge")
                 response.raise_for_status()
                 challenge_data = response.json()["challenge"]
 
@@ -301,7 +300,9 @@ def fetcher_worker(db_manager, stop_event, tui_app):
     logging.info("Fetcher thread stopped.")
 
 
-def _solve_one_challenge(db_manager, tui_app, stop_event, address, challenge, solver_mode):
+def _solve_one_challenge(
+    db_manager, tui_app, stop_event, address, challenge, solver_mode
+):
     """Solves a single challenge."""
     c = challenge  # for brevity
     short_address = f"{address[:10]}…{address[-6:]}"
@@ -371,7 +372,9 @@ def _solve_one_challenge(db_manager, tui_app, stop_event, address, challenge, so
             total_batch_size = batch_size_per_gpu * gpu_count
             batch_round = (nonce_value // total_batch_size) + 1
             estimated_hashes = batch_round * total_batch_size
-            estimated_hashrate = estimated_hashes / solve_duration if solve_duration > 0 else 0
+            estimated_hashrate = (
+                estimated_hashes / solve_duration if solve_duration > 0 else 0
+            )
             hashrate_msg = f"⚡ Estimated hashrate: {estimated_hashrate:.2f} H/s (~{batch_round} batch rounds)"
 
         tui_app.post_message(
@@ -383,7 +386,7 @@ def _solve_one_challenge(db_manager, tui_app, stop_event, address, challenge, so
         tui_app.post_message(LogMessage(f"⏱️ Solved in {solve_duration:.2f} seconds"))
         tui_app.post_message(LogMessage(hashrate_msg))
 
-        submit_url = f"https://scavenger.prod.gd.midnighttge.io/solution/{address}/{c['challengeId']}/{nonce}"
+        submit_url = f"https://mine.defensio.io/api/solution/{address}/{c['challengeId']}/{nonce}"
         submit_response = session.post(submit_url)
         submit_response.raise_for_status()
         validated_time = datetime.now(timezone.utc)
@@ -478,7 +481,13 @@ def _solve_one_challenge(db_manager, tui_app, stop_event, address, challenge, so
 
 
 def solver_worker(
-    db_manager, stop_event, solve_interval, tui_app, max_solvers, challenge_selection, solver_mode
+    db_manager,
+    stop_event,
+    solve_interval,
+    tui_app,
+    max_solvers,
+    challenge_selection,
+    solver_mode,
 ):
     tui_app.post_message(
         LogMessage(
@@ -657,35 +666,30 @@ def init_db(json_files):
         try:
             with open(file_path, "r") as f:
                 data = json.load(f)
-                address = data.get("registration_receipt", {}).get("walletAddress")
-                if not address:
-                    logging.warning(f"Could not find address in {file_path}, skipping.")
+                addresses = data.get("addresses", [])
+                if not addresses:
+                    logging.warning(
+                        f"Could not find addresses in {file_path}, skipping."
+                    )
                     continue
 
-                if address not in db:
-                    challenge_queue = data.get("challenge_queue", [])
-                    challenge_queue.sort(key=lambda c: c["challengeId"])
-                    db[address] = {
-                        "registration_receipt": data.get("registration_receipt"),
-                        "challenge_queue": challenge_queue,
-                    }
-                    logging.info(f"Initialized new address: {address}")
-                else:
-                    logging.info(f"Updating existing address: {address}")
-                    existing_ids = {
-                        c["challengeId"] for c in db[address].get("challenge_queue", [])
-                    }
-                    new_challenges = [
-                        c
-                        for c in data.get("challenge_queue", [])
-                        if c["challengeId"] not in existing_ids
-                    ]
-                    if new_challenges:
-                        db[address]["challenge_queue"].extend(new_challenges)
-                        db[address]["challenge_queue"].sort(
-                            key=lambda c: c["challengeId"]
+                for address in addresses:
+                    if not isinstance(address, str) or not address.strip():
+                        logging.warning(
+                            f"Invalid address format in {file_path}, skipping: {address}"
                         )
-                        logging.info(f"  Added {len(new_challenges)} new challenges.")
+                        continue
+
+                    address = address.strip()
+                    if address not in db:
+                        db[address] = {
+                            "registration_receipt": {"walletAddress": address},
+                            "challenge_queue": [],
+                        }
+                        logging.info(f"Initialized new address: {address}")
+                    else:
+                        logging.info(f"Address already exists: {address}")
+
         except FileNotFoundError:
             logging.error(f"File not found: {file_path}")
         except json.JSONDecodeError:
